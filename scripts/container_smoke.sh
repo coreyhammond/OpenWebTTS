@@ -18,6 +18,8 @@ for directory in models users audio audio_cache; do
   mkdir -p "$root/$directory"
   chmod 0777 "$root/$directory"
 done
+mkdir -p "$root/models/piper"
+chmod 0777 "$root/models/piper"
 
 start_container() {
   container_id=$(docker run -d \

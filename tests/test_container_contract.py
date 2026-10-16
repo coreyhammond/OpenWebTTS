@@ -47,3 +47,10 @@ def test_github_workflow_tests_smokes_and_publishes_amd64_image():
     assert "docker tag openwebtts-smoke:${GITHUB_SHA}" in workflow
     assert "docker push" in workflow
     assert "docker/build-push-action" not in workflow
+
+
+def test_container_smoke_precreates_nested_model_directory_for_cleanup():
+    smoke = (ROOT / "scripts/container_smoke.sh").read_text(encoding="utf-8")
+
+    assert 'mkdir -p "$root/models/piper"' in smoke
+    assert 'chmod 0777 "$root/models/piper"' in smoke

@@ -1,23 +1,2 @@
-beautifulsoup4
-bcrypt
-soundfile
-fastapi
-uvicorn[standard]
-python-multipart
-piper-tts
-kokoro
-misaki
-misaki[ja]
-coqui-tts
-PyMuPDF
-requests
-ebooklib
-pywebview
-openai-whisper
-google-cloud-texttospeech
-pytesseract
-pdf2image
-Pillow
-python-docx
-langdetect
-pydub
+# Canonical fully pinned, hash-verified runtime dependency set.
+-r requirements.lock

@@ -1,0 +1,11 @@
+beautifulsoup4
+EbookLib
+fastapi
+Jinja2
+langdetect
+piper-tts
+PyMuPDF
+python-docx
+python-multipart
+requests
+uvicorn[standard]

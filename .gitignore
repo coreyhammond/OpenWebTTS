@@ -1,9 +1,9 @@
 # Ignore Python virtual environment
 /venv/
+.venv/
 
 # Ignore node modules
 node_modules/
-package-lock.json
 
 # Ignore Python cache files
 __pycache__/
@@ -24,6 +24,7 @@ static/audio_cache/*
 build-dir
 build
 dist
+evidence/
 
 # Saved users
 users/

@@ -34,6 +34,18 @@ def test_piper_download_is_restricted_to_official_https_repository(monkeypatch):
             validate_piper_download(candidate)
 
 
+def test_piper_download_rejects_paths_that_normalize_outside_official_repository(
+    monkeypatch,
+):
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *args, **kwargs: [(None, None, None, None, ("13.224.10.2", 443))])
+
+    traversal = "https://huggingface.co/rhasspy/piper-voices/resolve/main/../../../../attacker/repo/resolve/main/evil.onnx"
+    encoded = "https://huggingface.co/rhasspy/piper-voices/resolve/main/%2e%2e/evil.onnx"
+    for candidate in (traversal, encoded):
+        with pytest.raises(ValueError, match="outside the official model repository"):
+            validate_piper_download(candidate)
+
+
 def test_address_policy_rejects_non_public_targets():
     assert is_public_address("8.8.8.8") is True
     for address in ("127.0.0.1", "10.0.0.1", "169.254.169.254", "::1", "fe80::1"):

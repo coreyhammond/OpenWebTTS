@@ -1,7 +1,8 @@
 import ipaddress
+import posixpath
 import re
 import socket
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 
 VOICE_KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
@@ -43,7 +44,15 @@ def validate_piper_download(url: str) -> str:
         raise ValueError("Piper downloads must use the official HTTPS repository")
     if parsed.username or parsed.password or parsed.port not in (None, 443):
         raise ValueError("Piper download URL contains forbidden authority fields")
-    if not parsed.path.startswith(PIPER_PATH_PREFIX) or not parsed.path.endswith(".onnx"):
+    decoded_path = unquote(parsed.path)
+    normalized_path = posixpath.normpath(decoded_path)
+    if (
+        decoded_path != parsed.path
+        or "\\" in parsed.path
+        or normalized_path != parsed.path
+        or not parsed.path.startswith(PIPER_PATH_PREFIX)
+        or not parsed.path.endswith(".onnx")
+    ):
         raise ValueError("Piper download path is outside the official model repository")
     if parsed.query or parsed.fragment:
         raise ValueError("Piper download URL must not contain query or fragment data")

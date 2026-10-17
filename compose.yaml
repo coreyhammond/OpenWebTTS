@@ -1,5 +1,23 @@
 services:
   openwebtts:
     build: .
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - openwebtts-models:/data/models
+      - openwebtts-users:/data/users
+      - openwebtts-audio:/data/audio
+      - openwebtts-audio-cache:/data/audio_cache
+
+volumes:
+  openwebtts-models:
+  openwebtts-users:
+  openwebtts-audio:
+  openwebtts-audio-cache:

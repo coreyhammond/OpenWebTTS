@@ -1,11 +1,16 @@
 {
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^7.1.0",
-        "@tailwindcss/cli": "^4.1.14",
-        "concurrently": "^9.2.1",
-        "marked": "^16.4.1",
-        "pdfjs-dist": "^5.4.296",
-        "tailwindcss": "^4.1.14"
+        "@fortawesome/fontawesome-free": "7.3.1",
+        "@tailwindcss/cli": "4.1.18",
+        "concurrently": "10.0.6",
+        "marked": "18.1.1",
+        "pdfjs-dist": "6.4.299",
+        "tailwindcss": "4.1.18"
+    },
+    "overrides": {
+        "@parcel/watcher": "2.6.0",
+        "braces": "3.0.3",
+        "micromatch": "4.0.8"
     },
     "scripts": {
         "build-css": "npx @tailwindcss/cli -i ./static/css/pre.css -o ./static/css/style.css",

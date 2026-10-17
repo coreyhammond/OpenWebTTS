@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import subprocess
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -139,6 +140,31 @@ def _download_to_path(
         temporary.unlink(missing_ok=True)
 
 
+def _replace_voice_pair(
+    staged_model: Path,
+    staged_config: Path,
+    model_path: Path,
+    config_path: Path,
+) -> None:
+    backup_model = staged_model.with_name("previous.onnx")
+    backup_config = staged_config.with_name("previous.onnx.json")
+    try:
+        if model_path.exists():
+            model_path.replace(backup_model)
+        if config_path.exists():
+            config_path.replace(backup_config)
+        staged_model.replace(model_path)
+        staged_config.replace(config_path)
+    except Exception:
+        model_path.unlink(missing_ok=True)
+        config_path.unlink(missing_ok=True)
+        if backup_model.exists():
+            backup_model.replace(model_path)
+        if backup_config.exists():
+            backup_config.replace(config_path)
+        raise
+
+
 @router.get("/healthz")
 async def health() -> dict[str, str]:
     return {"status": "healthy", "engine": "piper"}
@@ -195,27 +221,33 @@ async def download_piper_voice(voice: PiperVoice):
         raise HTTPException(status_code=429, detail="A model download is already running.")
     deadline = time.monotonic() + MODEL_DOWNLOAD_TIMEOUT_SECONDS
     try:
-        await asyncio.to_thread(
-            _download_to_path,
-            model_url,
-            model_path,
-            MAX_MODEL_DOWNLOAD_BYTES,
-            deadline,
-        )
-        await asyncio.to_thread(
-            _download_to_path,
-            f"{model_url}.json",
-            config_path,
-            2 * 1024 * 1024,
-            deadline,
-        )
+        with tempfile.TemporaryDirectory(prefix=f".{key}-", dir=PIPER_DIR) as staging:
+            staged_model = Path(staging) / "voice.onnx"
+            staged_config = Path(staging) / "voice.onnx.json"
+            await asyncio.to_thread(
+                _download_to_path,
+                model_url,
+                staged_model,
+                MAX_MODEL_DOWNLOAD_BYTES,
+                deadline,
+            )
+            await asyncio.to_thread(
+                _download_to_path,
+                f"{model_url}.json",
+                staged_config,
+                2 * 1024 * 1024,
+                deadline,
+            )
+            await asyncio.to_thread(
+                _replace_voice_pair,
+                staged_model,
+                staged_config,
+                model_path,
+                config_path,
+            )
     except TimeoutError as exc:
-        model_path.unlink(missing_ok=True)
-        config_path.unlink(missing_ok=True)
         raise HTTPException(status_code=504, detail="Piper voice download timed out.") from exc
     except (requests.RequestException, OSError, ValueError) as exc:
-        model_path.unlink(missing_ok=True)
-        config_path.unlink(missing_ok=True)
         raise HTTPException(status_code=502, detail="Piper voice download failed.") from exc
     finally:
         DOWNLOAD_GATE.release()

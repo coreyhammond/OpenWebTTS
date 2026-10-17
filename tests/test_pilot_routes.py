@@ -157,6 +157,40 @@ def test_model_download_uses_one_bounded_deadline(monkeypatch, tmp_path):
     assert routes.time.monotonic() < deadlines[0]
 
 
+def test_failed_voice_replacement_preserves_installed_pair(monkeypatch, tmp_path):
+    _, client = load_app(monkeypatch, tmp_path)
+    routes = importlib.import_module("functions.pilot_routes")
+    key = "en_US-test-low"
+    model_path = Path(routes.PIPER_DIR) / f"{key}.onnx"
+    config_path = Path(routes.PIPER_DIR) / f"{key}.onnx.json"
+    model_path.write_bytes(b"working-model")
+    config_path.write_bytes(b"working-config")
+    calls = 0
+
+    monkeypatch.setattr(routes, "validate_piper_download", lambda value: value)
+
+    def fake_download(url, destination, max_bytes, deadline):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            Path(destination).write_bytes(b"replacement-model")
+            return
+        raise routes.requests.RequestException("config download failed")
+
+    monkeypatch.setattr(routes, "_download_to_path", fake_download)
+    response = client.post(
+        "/api/download_piper_voice",
+        json={
+            "key": key,
+            "URL": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/test/low/en_US-test-low.onnx",
+        },
+    )
+
+    assert response.status_code == 502
+    assert model_path.read_bytes() == b"working-model"
+    assert config_path.read_bytes() == b"working-config"
+
+
 def test_document_parsing_uses_bounded_worker_and_releases_gate(monkeypatch, tmp_path):
     _, client = load_app(monkeypatch, tmp_path)
     routes = importlib.import_module("functions.pilot_routes")
